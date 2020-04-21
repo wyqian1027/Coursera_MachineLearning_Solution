@@ -25,11 +25,6 @@ Theta2 = reshape(nn_params((1 + (hidden_layer_size * (input_layer_size + 1))):en
 % Setup some useful variables
 m = size(X, 1);
          
-% You need to return the following variables correctly 
-J = 0;
-Theta1_grad = zeros(size(Theta1));
-Theta2_grad = zeros(size(Theta2));
-
 % ====================== YOUR CODE HERE ======================
 % Instructions: You should complete the code by working through the
 %               following parts.
@@ -39,6 +34,36 @@ Theta2_grad = zeros(size(Theta2));
 %         cost function computation is correct by verifying the cost
 %         computed in ex4.m
 %
+
+y_onehot = zeros(m, num_labels); % dim = (5000,10)
+for i = 1:m
+    y_onehot(i, y(i)) = 1;
+end
+
+% input = (5000,401)
+a1 = [ones(m,1) X];
+
+% layer1 = (5000,401)*(401,25) = (5000,25)  
+z2 = a1*Theta1';  
+a2 = [ones(m,1) sigmoid(z2)];
+
+% layer2 = (5000,26)*(26,10) = (5000,10)
+z3 = a2*Theta2'; 
+a3 = sigmoid(z3);
+h_theta = a3;
+
+cost_matrix = (- y_onehot .* log(h_theta)  - (1- y_onehot) .* log(1 - h_theta) );
+cost = sum(cost_matrix(:)) / m;
+
+clean_t1 = Theta1(:,2:end);
+clean_t2 = Theta2(:,2:end);
+
+reg = (sum(sum(clean_t1.*clean_t1)) + sum(sum(clean_t2.*clean_t2))) ...
+    * lambda / (2*m);
+
+J = cost + reg;
+
+
 % Part 2: Implement the backpropagation algorithm to compute the gradients
 %         Theta1_grad and Theta2_grad. You should return the partial derivatives of
 %         the cost function with respect to Theta1 and Theta2 in Theta1_grad and
@@ -63,8 +88,38 @@ Theta2_grad = zeros(size(Theta2));
 %
 
 
+Theta1_grad = zeros(size(Theta1)); % (25,401)
+Theta2_grad = zeros(size(Theta2)); % (10,26)
 
 
+
+
+for t = 1:m
+    
+    a1 = [1; X(t,:)'];     % (401,1)
+    z2 = Theta1*a1;        % (25,401)*(401,1) = (25,1)
+    a2 = sigmoid(z2);
+    a2 = [1; a2];          % (26,1)
+    z3 = Theta2*a2;        % (10,26)*(26,1) = (10,1)
+    a3 = sigmoid(z3);
+    
+    delta3 = a3 - y_onehot(t,:)'; % (10,1)
+    
+    z2 = [1; z2];     
+    delta2 = Theta2'*delta3 .* sigmoidGradient(z2); % (26,10)*(10,1) = (26,1)
+    delta2 = delta2(2:end);
+    
+    Theta2_grad = Theta2_grad + delta3*a2';    % (10,1)*(1,26)  = (10,26)
+    Theta1_grad = Theta1_grad + delta2*a1';    % (25,1)*(1,401) = (25,401)
+
+end;
+
+Theta1_grad = 1/m*Theta1_grad;
+Theta2_grad = 1/m*Theta2_grad;
+
+% add regularization
+Theta1_grad(:,2:end) = Theta1_grad(:,2:end) + Theta1(:,2:end)*lambda/m;    
+Theta2_grad(:,2:end) = Theta2_grad(:,2:end) + Theta2(:,2:end)*lambda/m;
 
 
 
