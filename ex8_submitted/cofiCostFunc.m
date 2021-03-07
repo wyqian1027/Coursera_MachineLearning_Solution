@@ -40,6 +40,30 @@ Theta_grad = zeros(size(Theta));
 %                     partial derivatives w.r.t. to each element of Theta
 %
 
+% Note:
+% m = movies, u = users, n = features
+% R, Y         :  m-by-u
+
+% X            :  m-by-n 
+% Theta        :  u-by-n 
+% X * Theta'   :  m-by-u
+
+% m-by-u
+% we might as well zero any invalid entry first
+inner_matrix = R .* (X * Theta' - Y); 
+
+% cost function returns just a number
+J = 0.5 * sum(sum(inner_matrix .^ 2));
+reg = lambda / 2 * (sum(sum(Theta.^2)) + sum(sum(X.^2)));
+J = J + reg;
+
+% m-by-n matrix, X_grad sums up all the users
+X_grad =  inner_matrix * Theta;
+X_grad = X_grad + lambda .* X;
+
+% u-by-n matrix, Theta_grad sums up all the movies
+Theta_grad =  inner_matrix' * X;
+Theta_grad = Theta_grad + lambda .* Theta;
 
 
 
